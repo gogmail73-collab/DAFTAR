@@ -12,6 +12,7 @@ on:
       - 'android/**'
       - 'build.gradle'
       - 'settings.gradle'
+      - 'gradle.properties'
       - '.github/workflows/android-apk.yml'
 permissions:
   contents: read
