@@ -11,6 +11,7 @@ on:
       - 'manifest.webmanifest'
       - 'sw.js'
       - 'app/src/main/**'
+      - 'app/build.gradle'
       - 'android/**'
       - 'build.gradle'
       - 'settings.gradle'
