@@ -9,6 +9,8 @@ on:
       - 'styles.css'
       - 'icon.svg'
       - 'manifest.webmanifest'
+      - 'sw.js'
+      - 'app/src/main/**'
       - 'android/**'
       - 'build.gradle'
       - 'settings.gradle'
