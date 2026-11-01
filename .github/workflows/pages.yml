@@ -1,4 +1,4 @@
-name: Deploy DAFTAR to GitHub Pages
+name: Validate and deploy DAFTAR
 on:
   push:
     branches: [main]
@@ -11,8 +11,32 @@ concurrency:
   group: pages
   cancel-in-progress: true
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check JavaScript syntax
+        run: node --check app.js
+      - name: Check required app files
+        run: |
+          test -s index.html
+          test -s styles.css
+          test -s app.js
+          test -s sw.js
+          test -s manifest.webmanifest
+          test -s icon.svg
+      - name: Check offline shell has no remote dependencies
+        run: |
+          if grep -En 'https?://|@import[[:space:]]+url' index.html styles.css app.js; then
+            echo "Unexpected remote dependency in app shell"
+            exit 1
+          fi
   build:
     runs-on: ubuntu-latest
+    needs: validate
     steps:
       - uses: actions/checkout@v4
       - name: Prepare static site
