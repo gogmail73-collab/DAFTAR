@@ -1,5 +1,7 @@
 plugins { id 'com.android.application' }
 
+def signingEnv = { name -> System.getenv(name) }
+
 android {
     namespace 'com.daftar.study'
     compileSdk 35
@@ -7,8 +9,24 @@ android {
         applicationId 'com.daftar.study'
         minSdk 23
         targetSdk 35
-        versionCode 3
-        versionName '1.2.0'
+        versionCode 4
+        versionName '1.2.1'
+    }
+
+    signingConfigs {
+        release {
+            storeFile file(signingEnv('DAFTAR_KEYSTORE_PATH') ?: "${rootProject.projectDir}/daftar-release.jks")
+            storePassword signingEnv('DAFTAR_STORE_PASSWORD')
+            keyAlias signingEnv('DAFTAR_KEY_ALIAS')
+            keyPassword signingEnv('DAFTAR_KEY_PASSWORD')
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+        }
     }
 }
 
