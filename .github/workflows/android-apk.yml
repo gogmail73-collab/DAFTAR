@@ -38,14 +38,36 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      - name: Check signing secrets
+        env:
+          DAFTAR_KEYSTORE_BASE64: ${{ secrets.DAFTAR_KEYSTORE_BASE64 }}
+          DAFTAR_STORE_PASSWORD: ${{ secrets.DAFTAR_STORE_PASSWORD }}
+          DAFTAR_KEY_ALIAS: ${{ secrets.DAFTAR_KEY_ALIAS }}
+          DAFTAR_KEY_PASSWORD: ${{ secrets.DAFTAR_KEY_PASSWORD }}
+        run: |
+          test -n "$DAFTAR_KEYSTORE_BASE64" || (echo "Missing GitHub secret: DAFTAR_KEYSTORE_BASE64" && exit 1)
+          test -n "$DAFTAR_STORE_PASSWORD" || (echo "Missing GitHub secret: DAFTAR_STORE_PASSWORD" && exit 1)
+          test -n "$DAFTAR_KEY_ALIAS" || (echo "Missing GitHub secret: DAFTAR_KEY_ALIAS" && exit 1)
+          test -n "$DAFTAR_KEY_PASSWORD" || (echo "Missing GitHub secret: DAFTAR_KEY_PASSWORD" && exit 1)
+          echo "$DAFTAR_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/daftar-release.jks"
+          echo "DAFTAR_KEYSTORE_PATH=$RUNNER_TEMP/daftar-release.jks" >> "$GITHUB_ENV"
       - name: Check JavaScript syntax
         run: node --check app.js
-      - name: Build debug APK
-        run: gradle --no-daemon assembleDebug
+      - name: Build signed release APK
+        env:
+          DAFTAR_STORE_PASSWORD: ${{ secrets.DAFTAR_STORE_PASSWORD }}
+          DAFTAR_KEY_ALIAS: ${{ secrets.DAFTAR_KEY_ALIAS }}
+          DAFTAR_KEY_PASSWORD: ${{ secrets.DAFTAR_KEY_PASSWORD }}
+        run: gradle --no-daemon assembleRelease
+      - name: Verify APK signature
+        run: |
+          APK=app/build/outputs/apk/release/app-release.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK"
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: DAFTAR-Android-debug-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: DAFTAR-Android-release-APK
+          path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 90
