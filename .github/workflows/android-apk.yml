@@ -2,7 +2,7 @@ name: Build DAFTAR Android APK
 on:
   workflow_dispatch:
   push:
-    branches: [main, 'redesign/**']
+    branches: [main, 'redesign/**', 'fix/**']
     paths:
       - 'app.js'
       - 'index.html'
