@@ -82,7 +82,7 @@ public class MainActivity extends Activity {
             fileCallback.onReceiveValue(result); fileCallback = null;
         }
     }
-    private final class NativeDocumentBridge {
+    public final class NativeDocumentBridge {
         @JavascriptInterface public String getLastPickedUri() { return lastPickedUri; }
         @JavascriptInterface public int getPdfPageCount(String uri) {
             try (ParcelFileDescriptor fd = getContentResolver().openFileDescriptor(Uri.parse(uri), "r"); PdfRenderer renderer = new PdfRenderer(fd)) { return renderer.getPageCount(); }
