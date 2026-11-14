@@ -36,7 +36,7 @@ dependencies {
 
 tasks.register('copyWebAssets', Copy) {
     from('../') {
-        include 'index.html', 'styles.css', 'app.js', 'icon.svg', 'manifest.webmanifest'
+        include 'index.html', 'styles.css', 'app.js', 'icon.svg', 'manifest.webmanifest', 'vendor/**'
     }
     into('src/main/assets/www')
 }
