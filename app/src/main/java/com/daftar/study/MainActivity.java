@@ -19,6 +19,9 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.graphics.Color;
 import androidx.core.view.WindowCompat;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.graphics.Insets;
 import androidx.webkit.WebViewAssetLoader;
 
 public class MainActivity extends Activity {
@@ -29,12 +32,17 @@ public class MainActivity extends Activity {
     private String lastPickedUri = "";
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         getWindow().setStatusBarColor(Color.rgb(245,244,239));
         getWindow().setNavigationBarColor(Color.rgb(245,244,239));
         getWindow().getDecorView().setSystemUiVisibility(android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
         assetLoader = new WebViewAssetLoader.Builder().addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this)).build();
         webView = new WebView(this);
+        ViewCompat.setOnApplyWindowInsetsListener(webView, (view, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            view.setPadding(0, bars.top, 0, bars.bottom);
+            return WindowInsetsCompat.CONSUMED;
+        });
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true); settings.setDomStorageEnabled(true); settings.setDatabaseEnabled(true);
         settings.setAllowFileAccess(false); settings.setAllowContentAccess(true);
@@ -63,6 +71,7 @@ public class MainActivity extends Activity {
             }
         });
         setContentView(webView);
+        ViewCompat.requestApplyInsets(webView);
         webView.loadUrl("https://appassets.androidplatform.net/assets/www/index.html");
     }
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
