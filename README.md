@@ -7,7 +7,8 @@ DAFTAR is a privacy-first study organizer. Study records stay in the browser's l
 - Organize subjects and lectures.
 - Track completed lectures and overall progress.
 - Add notes to lectures.
-- Dark/light appearance.
+- Persistent light/dark appearance.
+- Local document library for PDF, DOCX, and PPTX with in-app preview (first-time renderer download requires internet).
 - Automatic local persistence using IndexedDB.
 - JSON backup export and restore with validation and confirmation.
 - One-time migration attempt from the earlier `daftar-v1` localStorage key; the old key is not deleted.
@@ -32,7 +33,7 @@ Open http://localhost:8080.
 GitHub Actions deploys the site to GitHub Pages when enabled for this repository (Settings → Pages → Build and deployment → GitHub Actions).
 
 ## Update and Android installation
-The PWA updates its cached shell when a new service-worker version is deployed; users should reopen the app while online to receive it. This web app is not yet a signed Android APK. APK upgrades require a persistent Android application ID and the same release signing key for every release. Never rotate or regenerate that key between releases. Do not distribute a debug-signed APK as a production update.
+The PWA updates its cached shell when a new service-worker version is deployed; users should reopen the app while online to receive it. Imported documents are stored in a separate local IndexedDB store and are not included in the JSON study-data backup. Export or copy important documents separately. The in-app PDF, DOCX, and PPTX previewers load their rendering libraries from a CDN; first-time preview requires internet. PPTX preview currently extracts slide text and does not reproduce all original slide layouts, charts, or animations. Legacy .doc and .ppt files are not supported. This web app is not yet a signed Android APK. APK upgrades require a persistent Android application ID and the same release signing key for every release. Never rotate or regenerate that key between releases. Do not distribute a debug-signed APK as a production update.
 
 ## Privacy
 All study data is stored locally in the user's browser profile. Clearing site data, uninstalling an app, or losing the device can erase it; backups are therefore essential.
