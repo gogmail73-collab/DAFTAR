@@ -9,8 +9,8 @@ android {
         applicationId 'com.daftar.study'
         minSdk 23
         targetSdk 35
-        versionCode 6
-        versionName '1.3.1'
+        versionCode 7
+        versionName '1.4.0'
     }
 
     signingConfigs {
@@ -32,6 +32,7 @@ android {
 
 dependencies {
     implementation 'androidx.webkit:webkit:1.12.1'
+    implementation 'androidx.core:core:1.15.0'
 }
 
 tasks.register('copyWebAssets', Copy) {
