@@ -36,3 +36,16 @@ The PWA updates its cached shell when a new service-worker version is deployed; 
 
 ## Privacy
 All study data is stored locally in the user's browser profile. Clearing site data, uninstalling an app, or losing the device can erase it; backups are therefore essential.
+
+## Signed Android update setup
+
+The release APK workflow intentionally stops if the persistent signing credentials are missing. Configure these four **GitHub Actions repository secrets** under **Settings → Secrets and variables → Actions**:
+
+- `DAFTAR_KEYSTORE_BASE64` — the existing release keystore encoded as Base64
+- `DAFTAR_STORE_PASSWORD` — keystore password
+- `DAFTAR_KEY_ALIAS` — alias of the existing release key
+- `DAFTAR_KEY_PASSWORD` — password for that key
+
+**Important:** use the exact keystore and alias that signed the APK already installed on users' devices. Creating a new key will prevent Android from installing the new APK as an update over an app signed with the old key. Keep an encrypted backup of the keystore outside GitHub; never commit it to this repository.
+
+The unsigned/debug build is for testing only and is not a safe substitute for an update-compatible release APK.
