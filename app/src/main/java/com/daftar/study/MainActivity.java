@@ -4,6 +4,12 @@ import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.webkit.ValueCallback;
+import android.webkit.JavascriptInterface;
+import android.graphics.Bitmap;
+import android.graphics.pdf.PdfRenderer;
+import android.os.ParcelFileDescriptor;
+import android.util.Base64;
+import java.io.ByteArrayOutputStream;
 import android.os.Bundle;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -19,6 +25,7 @@ public class MainActivity extends Activity {
     private WebViewAssetLoader assetLoader;
     private ValueCallback<Uri[]> fileCallback;
     private static final int FILE_CHOOSER_REQUEST = 4102;
+    private String lastPickedUri = "";
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
@@ -39,11 +46,22 @@ public class MainActivity extends Activity {
                 return assetLoader.shouldInterceptRequest(request.getUrl());
             }
         });
+        webView.addJavascriptInterface(new NativeDocumentBridge(), "DAFTARNative");
         webView.setWebChromeClient(new WebChromeClient() {
             @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
                 if (fileCallback != null) fileCallback.onReceiveValue(null);
                 fileCallback = callback;
-                Intent intent = params.createIntent();
+                boolean json = false;
+                String[] accepted = params.getAcceptTypes();
+                if (accepted != null) for (String type : accepted) if (type != null && type.toLowerCase().contains("json")) json = true;
+                Intent intent;
+                if (json) { intent = params.createIntent(); }
+                else {
+                    intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                    intent.setType("*/*");
+                    intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.openxmlformats-officedocument.presentationml.presentation"});
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+                }
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
                 try { startActivityForResult(intent, FILE_CHOOSER_REQUEST); }
                 catch (Exception e) { fileCallback = null; callback.onReceiveValue(null); return false; }
@@ -57,7 +75,31 @@ public class MainActivity extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == FILE_CHOOSER_REQUEST && fileCallback != null) {
             Uri[] result = resultCode == RESULT_OK && data != null && data.getData() != null ? new Uri[]{data.getData()} : null;
+            if (result != null) {
+                lastPickedUri = result[0].toString();
+                try { getContentResolver().takePersistableUriPermission(result[0], Intent.FLAG_GRANT_READ_URI_PERMISSION); } catch (Exception ignored) { }
+            }
             fileCallback.onReceiveValue(result); fileCallback = null;
+        }
+    }
+    private final class NativeDocumentBridge {
+        @JavascriptInterface public String getLastPickedUri() { return lastPickedUri; }
+        @JavascriptInterface public int getPdfPageCount(String uri) {
+            try (ParcelFileDescriptor fd = getContentResolver().openFileDescriptor(Uri.parse(uri), "r"); PdfRenderer renderer = new PdfRenderer(fd)) { return renderer.getPageCount(); }
+            catch (Exception e) { return -1; }
+        }
+        @JavascriptInterface public String renderPdfPage(String uri, int pageIndex, int maxWidth) {
+            try (ParcelFileDescriptor fd = getContentResolver().openFileDescriptor(Uri.parse(uri), "r"); PdfRenderer renderer = new PdfRenderer(fd)) {
+                if (pageIndex < 0 || pageIndex >= renderer.getPageCount()) return "";
+                try (PdfRenderer.Page page = renderer.openPage(pageIndex)) {
+                    float scale = Math.min(1.5f, Math.max(0.5f, maxWidth / (float) page.getWidth()));
+                    Bitmap bitmap = Bitmap.createBitmap(Math.round(page.getWidth() * scale), Math.round(page.getHeight() * scale), Bitmap.Config.ARGB_8888);
+                    page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+                    ByteArrayOutputStream output = new ByteArrayOutputStream();
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, output); bitmap.recycle();
+                    return Base64.encodeToString(output.toByteArray(), Base64.NO_WRAP);
+                }
+            } catch (Exception e) { return ""; }
         }
     }
     @Override public void onBackPressed() {
