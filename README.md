@@ -66,3 +66,7 @@ The unsigned/debug build is for testing only and is not a safe substitute for an
 - Native Android share sheet for subject summaries and lecture notes.
 - Paginated PDF viewer with last-page persistence, page bookmarks and per-page notes; PDF attachments are included in backups and can be rendered after restore.
 - Android WorkManager reminders for task deadlines, exams, class sessions and timer completion. WorkManager timing is battery-optimized and may not be exact to the minute; Android 13+ notification permission is required.
+
+- Local recovery history increased to 100 snapshots (previously 30).
+- Tasks support subtasks and daily, weekly or monthly recurrence; recurring items are generated when the current task is marked complete.
+- Grade target calculator estimates the score needed across remaining marks to reach a chosen percentage.
