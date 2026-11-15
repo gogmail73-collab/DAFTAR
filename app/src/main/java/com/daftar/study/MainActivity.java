@@ -46,17 +46,12 @@ public class MainActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 4103);
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
-        getWindow().setStatusBarColor(Color.rgb(245,244,239));
-        getWindow().setNavigationBarColor(Color.rgb(245,244,239));
-        getWindow().getDecorView().setSystemUiVisibility(android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
+        getWindow().setStatusBarColor(Color.rgb(13,20,34));
+        getWindow().setNavigationBarColor(Color.rgb(13,20,34));
+        getWindow().getDecorView().setSystemUiVisibility(0);
         assetLoader = new WebViewAssetLoader.Builder().addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this)).build();
         webView = new WebView(this);
-        ViewCompat.setOnApplyWindowInsetsListener(webView, (view, insets) -> {
-            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            view.setPadding(0, bars.top, 0, bars.bottom);
-            return WindowInsetsCompat.CONSUMED;
-        });
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true); settings.setDomStorageEnabled(true); settings.setDatabaseEnabled(true);
         settings.setAllowFileAccess(false); settings.setAllowContentAccess(true);
@@ -75,7 +70,7 @@ public class MainActivity extends Activity {
                 if (json) intent = params.createIntent();
                 else {
                     intent = new Intent(Intent.ACTION_OPEN_DOCUMENT); intent.setType("*/*");
-                    intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"application/pdf","application/vnd.openxmlformats-officedocument.wordprocessingml.document","application/vnd.openxmlformats-officedocument.presentationml.presentation"});
+                    intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"application/pdf","application/vnd.openxmlformats-officedocument.wordprocessingml.document","application/vnd.openxmlformats-officedocument.presentationml.presentation","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","text/plain","text/markdown","image/png","image/jpeg","image/webp"});
                     intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
                 }
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -85,7 +80,6 @@ public class MainActivity extends Activity {
             }
         });
         setContentView(webView);
-        ViewCompat.requestApplyInsets(webView);
         webView.loadUrl("https://appassets.androidplatform.net/assets/www/index.html");
     }
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -112,7 +106,7 @@ public class MainActivity extends Activity {
                 if (light) flags |= android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
                 else flags &= ~(android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
                 getWindow().getDecorView().setSystemUiVisibility(flags);
-                int color = light ? Color.rgb(245,244,239) : Color.rgb(17,28,33);
+                int color = light ? Color.rgb(244,241,233) : Color.rgb(13,20,34);
                 getWindow().setStatusBarColor(color); getWindow().setNavigationBarColor(color);
             });
         }
