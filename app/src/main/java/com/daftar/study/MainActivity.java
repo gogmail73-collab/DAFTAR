@@ -92,7 +92,14 @@ public class MainActivity extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == FILE_CHOOSER_REQUEST && fileCallback != null) {
             Uri[] result = resultCode == RESULT_OK && data != null && data.getData() != null ? new Uri[]{data.getData()} : null;
-            if (result != null) { lastPickedUri = result[0].toString(); try { getContentResolver().takePersistableUriPermission(result[0], Intent.FLAG_GRANT_READ_URI_PERMISSION); } catch (Exception ignored) {} }
+            if (result != null) {
+                lastPickedUri = result[0].toString();
+                int grantedFlags = data.getFlags() & Intent.FLAG_GRANT_READ_URI_PERMISSION;
+                if (grantedFlags != 0) {
+                    try { getContentResolver().takePersistableUriPermission(result[0], grantedFlags); }
+                    catch (SecurityException ignored) { /* The imported file bytes are also stored in IndexedDB. */ }
+                }
+            } else { lastPickedUri = ""; }
             fileCallback.onReceiveValue(result); fileCallback = null;
         }
     }
