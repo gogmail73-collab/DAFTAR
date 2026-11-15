@@ -90,6 +90,16 @@ public class MainActivity extends Activity {
     public final class NativeDocumentBridge {
         private final Map<String, File> cachedPdfFiles = new HashMap<>();
         @JavascriptInterface public String getLastPickedUri() { return lastPickedUri; }
+        @JavascriptInterface public void setSystemBars(boolean light) {
+            runOnUiThread(() -> {
+                int flags = getWindow().getDecorView().getSystemUiVisibility();
+                if (light) flags |= android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+                else flags &= ~(android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+                getWindow().getDecorView().setSystemUiVisibility(flags);
+                int color = light ? Color.rgb(245,244,239) : Color.rgb(17,28,33);
+                getWindow().setStatusBarColor(color); getWindow().setNavigationBarColor(color);
+            });
+        }
         @JavascriptInterface public String preparePdfBase64(String encoded) {
             try {
                 byte[] bytes = Base64.decode(encoded, Base64.DEFAULT);
