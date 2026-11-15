@@ -154,6 +154,12 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void cancelReminder(String id) {
             if (id != null) WorkManager.getInstance(MainActivity.this).cancelUniqueWork("daftar-reminder-" + id);
         }
+        @JavascriptInterface public void shareText(String title, String text) {
+            runOnUiThread(() -> {
+                Intent send = new Intent(Intent.ACTION_SEND); send.setType("text/plain"); send.putExtra(Intent.EXTRA_TEXT, text == null ? "" : text);
+                try { startActivity(Intent.createChooser(send, title == null ? "مشاركة من دفتر" : title)); } catch (Exception ignored) {}
+            });
+        }
         @JavascriptInterface public int getPdfPageCount(String uri) {
             try (ParcelFileDescriptor fd=getContentResolver().openFileDescriptor(Uri.parse(uri),"r"); PdfRenderer renderer=new PdfRenderer(fd)) { return renderer.getPageCount(); } catch(Exception e){return -1;}
         }
