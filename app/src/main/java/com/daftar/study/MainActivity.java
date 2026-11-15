@@ -1,6 +1,8 @@
 package com.daftar.study;
 
 import android.app.Activity;
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.content.Intent;
 import android.net.Uri;
 import android.webkit.ValueCallback;
@@ -28,6 +30,11 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.graphics.Insets;
 import androidx.webkit.WebViewAssetLoader;
+import androidx.work.Data;
+import androidx.work.ExistingWorkPolicy;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
+import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends Activity {
     private WebView webView;
@@ -37,6 +44,7 @@ public class MainActivity extends Activity {
     private String lastPickedUri = "";
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
+        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 4103);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         getWindow().setStatusBarColor(Color.rgb(245,244,239));
         getWindow().setNavigationBarColor(Color.rgb(245,244,239));
@@ -130,6 +138,20 @@ public class MainActivity extends Activity {
         }
         @JavascriptInterface public void clearCachedPdf(String token) {
             File file = cachedPdfFiles.remove(token); if (file != null && file.exists()) file.delete();
+        }
+        @JavascriptInterface public boolean scheduleReminder(String id, String title, String body, long timestamp) {
+            try {
+                long delay = Math.max(0L, timestamp - System.currentTimeMillis());
+                int notificationId = id == null ? (int) (System.currentTimeMillis() & 0x7fffffff) : Math.abs(id.hashCode());
+                Data data = new Data.Builder().putString("title", title).putString("body", body).putInt("notificationId", notificationId).build();
+                OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(ReminderWorker.class)
+                        .setInputData(data).setInitialDelay(delay, TimeUnit.MILLISECONDS).build();
+                WorkManager.getInstance(MainActivity.this).enqueueUniqueWork("daftar-reminder-" + id, ExistingWorkPolicy.REPLACE, request);
+                return true;
+            } catch (Exception e) { return false; }
+        }
+        @JavascriptInterface public void cancelReminder(String id) {
+            if (id != null) WorkManager.getInstance(MainActivity.this).cancelUniqueWork("daftar-reminder-" + id);
         }
         @JavascriptInterface public int getPdfPageCount(String uri) {
             try (ParcelFileDescriptor fd=getContentResolver().openFileDescriptor(Uri.parse(uri),"r"); PdfRenderer renderer=new PdfRenderer(fd)) { return renderer.getPageCount(); } catch(Exception e){return -1;}
