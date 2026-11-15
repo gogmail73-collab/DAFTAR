@@ -10,6 +10,11 @@ import android.graphics.pdf.PdfRenderer;
 import android.os.ParcelFileDescriptor;
 import android.util.Base64;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import android.os.Bundle;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
@@ -83,7 +88,39 @@ public class MainActivity extends Activity {
         }
     }
     public final class NativeDocumentBridge {
+        private final Map<String, File> cachedPdfFiles = new HashMap<>();
         @JavascriptInterface public String getLastPickedUri() { return lastPickedUri; }
+        @JavascriptInterface public String preparePdfBase64(String encoded) {
+            try {
+                byte[] bytes = Base64.decode(encoded, Base64.DEFAULT);
+                if (bytes.length == 0 || bytes.length > 40 * 1024 * 1024) return "";
+                File dir = new File(getCacheDir(), "daftar-pdf"); if (!dir.exists() && !dir.mkdirs()) return "";
+                File file = File.createTempFile("restored-", ".pdf", dir);
+                try (FileOutputStream out = new FileOutputStream(file)) { out.write(bytes); out.flush(); }
+                String token = UUID.randomUUID().toString(); cachedPdfFiles.put(token, file); return token;
+            } catch (Exception e) { return ""; }
+        }
+        @JavascriptInterface public int getCachedPdfPageCount(String token) {
+            File file = cachedPdfFiles.get(token); if (file == null || !file.exists()) return -1;
+            try (ParcelFileDescriptor fd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY); PdfRenderer renderer = new PdfRenderer(fd)) { return renderer.getPageCount(); }
+            catch (Exception e) { return -1; }
+        }
+        @JavascriptInterface public String renderCachedPdfPage(String token, int pageIndex, int maxWidth) {
+            File file = cachedPdfFiles.get(token); if (file == null || !file.exists()) return "";
+            try (ParcelFileDescriptor fd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY); PdfRenderer renderer = new PdfRenderer(fd)) {
+                if (pageIndex < 0 || pageIndex >= renderer.getPageCount()) return "";
+                try (PdfRenderer.Page page = renderer.openPage(pageIndex)) {
+                    float scale = Math.min(1.5f, Math.max(0.5f, maxWidth / (float) page.getWidth()));
+                    Bitmap bitmap = Bitmap.createBitmap(Math.round(page.getWidth()*scale), Math.round(page.getHeight()*scale), Bitmap.Config.ARGB_8888);
+                    page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+                    ByteArrayOutputStream output = new ByteArrayOutputStream(); bitmap.compress(Bitmap.CompressFormat.PNG, 100, output); bitmap.recycle();
+                    return Base64.encodeToString(output.toByteArray(), Base64.NO_WRAP);
+                }
+            } catch (Exception e) { return ""; }
+        }
+        @JavascriptInterface public void clearCachedPdf(String token) {
+            File file = cachedPdfFiles.remove(token); if (file != null && file.exists()) file.delete();
+        }
         @JavascriptInterface public int getPdfPageCount(String uri) {
             try (ParcelFileDescriptor fd=getContentResolver().openFileDescriptor(Uri.parse(uri),"r"); PdfRenderer renderer=new PdfRenderer(fd)) { return renderer.getPageCount(); } catch(Exception e){return -1;}
         }
