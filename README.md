@@ -50,3 +50,11 @@ The release APK workflow intentionally stops if the persistent signing credentia
 **Important:** use the exact keystore and alias that signed the APK already installed on users' devices. Creating a new key will prevent Android from installing the new APK as an update over an app signed with the old key. Keep an encrypted backup of the keystore outside GitHub; never commit it to this repository.
 
 The unsigned/debug build is for testing only and is not a safe substitute for an update-compatible release APK.
+
+
+## DAFTAR 1.5.0 development
+- Tasks and assignments with due dates, priorities, and completion tracking.
+- Weekly lecture timetable with day, time, subject, and location.
+- Exam calendar with countdowns and upcoming exam overview.
+- Full JSON backup now embeds local document files (PDF, DOCX, PPTX); backup files can be large, up to the app's import limit.
+- Database schema migrated to version 5 while preserving existing subjects, lectures, sessions, and document records.
