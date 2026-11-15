@@ -28,6 +28,7 @@ jobs:
           test -s sw.js
           test -s manifest.webmanifest
           test -s icon.svg
+          test -s vendor/jszip.min.js
       - name: Check offline shell has no remote dependencies
         run: |
           if grep -En 'https?://|@import[[:space:]]+url' index.html styles.css app.js; then
@@ -43,10 +44,13 @@ jobs:
         run: |
           mkdir -p dist
           cp index.html styles.css app.js sw.js manifest.webmanifest icon.svg dist/
+          mkdir -p dist/vendor
+          cp vendor/jszip.min.js dist/vendor/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
   deploy:
+    if: ${{ vars.ENABLE_GITHUB_PAGES == 'true' }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

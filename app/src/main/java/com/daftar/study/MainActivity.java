@@ -1,6 +1,8 @@
 package com.daftar.study;
 
 import android.app.Activity;
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.content.Intent;
 import android.net.Uri;
 import android.webkit.ValueCallback;
@@ -10,7 +12,13 @@ import android.graphics.pdf.PdfRenderer;
 import android.os.ParcelFileDescriptor;
 import android.util.Base64;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import android.os.Bundle;
+import android.os.Build;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -23,6 +31,11 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.graphics.Insets;
 import androidx.webkit.WebViewAssetLoader;
+import androidx.work.Data;
+import androidx.work.ExistingWorkPolicy;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
+import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends Activity {
     private WebView webView;
@@ -32,6 +45,7 @@ public class MainActivity extends Activity {
     private String lastPickedUri = "";
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
+        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 4103);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         getWindow().setStatusBarColor(Color.rgb(245,244,239));
         getWindow().setNavigationBarColor(Color.rgb(245,244,239));
@@ -83,7 +97,69 @@ public class MainActivity extends Activity {
         }
     }
     public final class NativeDocumentBridge {
+        private final Map<String, File> cachedPdfFiles = new HashMap<>();
         @JavascriptInterface public String getLastPickedUri() { return lastPickedUri; }
+        @JavascriptInterface public void setSystemBars(boolean light) {
+            runOnUiThread(() -> {
+                int flags = getWindow().getDecorView().getSystemUiVisibility();
+                if (light) flags |= android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+                else flags &= ~(android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+                getWindow().getDecorView().setSystemUiVisibility(flags);
+                int color = light ? Color.rgb(245,244,239) : Color.rgb(17,28,33);
+                getWindow().setStatusBarColor(color); getWindow().setNavigationBarColor(color);
+            });
+        }
+        @JavascriptInterface public String preparePdfBase64(String encoded) {
+            try {
+                byte[] bytes = Base64.decode(encoded, Base64.DEFAULT);
+                if (bytes.length == 0 || bytes.length > 40 * 1024 * 1024) return "";
+                File dir = new File(getCacheDir(), "daftar-pdf"); if (!dir.exists() && !dir.mkdirs()) return "";
+                File file = File.createTempFile("restored-", ".pdf", dir);
+                try (FileOutputStream out = new FileOutputStream(file)) { out.write(bytes); out.flush(); }
+                String token = UUID.randomUUID().toString(); cachedPdfFiles.put(token, file); return token;
+            } catch (Exception e) { return ""; }
+        }
+        @JavascriptInterface public int getCachedPdfPageCount(String token) {
+            File file = cachedPdfFiles.get(token); if (file == null || !file.exists()) return -1;
+            try (ParcelFileDescriptor fd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY); PdfRenderer renderer = new PdfRenderer(fd)) { return renderer.getPageCount(); }
+            catch (Exception e) { return -1; }
+        }
+        @JavascriptInterface public String renderCachedPdfPage(String token, int pageIndex, int maxWidth) {
+            File file = cachedPdfFiles.get(token); if (file == null || !file.exists()) return "";
+            try (ParcelFileDescriptor fd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY); PdfRenderer renderer = new PdfRenderer(fd)) {
+                if (pageIndex < 0 || pageIndex >= renderer.getPageCount()) return "";
+                try (PdfRenderer.Page page = renderer.openPage(pageIndex)) {
+                    float scale = Math.min(1.5f, Math.max(0.5f, maxWidth / (float) page.getWidth()));
+                    Bitmap bitmap = Bitmap.createBitmap(Math.round(page.getWidth()*scale), Math.round(page.getHeight()*scale), Bitmap.Config.ARGB_8888);
+                    page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+                    ByteArrayOutputStream output = new ByteArrayOutputStream(); bitmap.compress(Bitmap.CompressFormat.PNG, 100, output); bitmap.recycle();
+                    return Base64.encodeToString(output.toByteArray(), Base64.NO_WRAP);
+                }
+            } catch (Exception e) { return ""; }
+        }
+        @JavascriptInterface public void clearCachedPdf(String token) {
+            File file = cachedPdfFiles.remove(token); if (file != null && file.exists()) file.delete();
+        }
+        @JavascriptInterface public boolean scheduleReminder(String id, String title, String body, long timestamp) {
+            try {
+                long delay = Math.max(0L, timestamp - System.currentTimeMillis());
+                int notificationId = id == null ? (int) (System.currentTimeMillis() & 0x7fffffff) : Math.abs(id.hashCode());
+                Data data = new Data.Builder().putString("title", title).putString("body", body).putInt("notificationId", notificationId).build();
+                OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(ReminderWorker.class)
+                        .setInputData(data).setInitialDelay(delay, TimeUnit.MILLISECONDS).build();
+                WorkManager.getInstance(MainActivity.this).enqueueUniqueWork("daftar-reminder-" + id, ExistingWorkPolicy.REPLACE, request);
+                return true;
+            } catch (Exception e) { return false; }
+        }
+        @JavascriptInterface public void cancelReminder(String id) {
+            if (id != null) WorkManager.getInstance(MainActivity.this).cancelUniqueWork("daftar-reminder-" + id);
+        }
+        @JavascriptInterface public void shareText(String title, String text) {
+            runOnUiThread(() -> {
+                Intent send = new Intent(Intent.ACTION_SEND); send.setType("text/plain"); send.putExtra(Intent.EXTRA_TEXT, text == null ? "" : text);
+                try { startActivity(Intent.createChooser(send, title == null ? "مشاركة من دفتر" : title)); } catch (Exception ignored) {}
+            });
+        }
         @JavascriptInterface public int getPdfPageCount(String uri) {
             try (ParcelFileDescriptor fd=getContentResolver().openFileDescriptor(Uri.parse(uri),"r"); PdfRenderer renderer=new PdfRenderer(fd)) { return renderer.getPageCount(); } catch(Exception e){return -1;}
         }
