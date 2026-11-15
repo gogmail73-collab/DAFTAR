@@ -88,7 +88,79 @@ $('documentPicker').onchange=async e=>{const file=e.target.files[0];if(!file)ret
 $('documentPicker').addEventListener('cancel',()=>{pendingSubjectId=null});
 $('closeDocument').onclick=()=>{$('documentDialog').close();releasePdfViewer()};$('documentDialog').addEventListener('close',releasePdfViewer);
 function releasePdfViewer(){if(activePdfToken&&window.DAFTARNative?.clearCachedPdf)window.DAFTARNative.clearCachedPdf(activePdfToken);activePdfToken='';activePdfId=''}
-async function openDocument(id){const d=documents.find(x=>x.id===id);if(!d)return;releasePdfViewer();const root=$('documentPreview');root.innerHTML='';$('documentTitle').textContent=d.name;$('documentDialog').showModal();const ext=d.name.split('.').pop().toLowerCase();try{if(ext==='pdf'){if(!window.DAFTARNative)throw Error('عارض PDF الأصلي غير متاح.');let count=-1;if(d.uri)count=window.DAFTARNative.getPdfPageCount(d.uri);else{if(!d.blob)throw Error('ملف PDF غير موجود في النسخة الاحتياطية.');const dataUrl=await blobToDataUrl(d.blob);activePdfToken=window.DAFTARNative.preparePdfBase64(dataUrl.split(',')[1]);activePdfId=id;if(!activePdfToken)throw Error('تعذر تجهيز ملف PDF من النسخة الاحتياطية.');count=window.DAFTARNative.getCachedPdfPageCount(activePdfToken)}if(count<1)throw Error('تعذر فتح ملف PDF.');activePdfId=id;d.bookmarks=Array.isArray(d.bookmarks)?d.bookmarks:[];d.pageNotes=d.pageNotes&&typeof d.pageNotes==='object'?d.pageNotes:{};let pageIndex=Math.max(0,Math.min(count-1,Number(d.lastPage)||0));const toolbar=el('div','pdf-toolbar'),prev=el('button','btn-secondary','السابق'),label=el('span','pdf-page-label',''),next=el('button','btn-secondary','التالي'),mark=el('button','btn-secondary','☆ حفظ الصفحة');toolbar.append(prev,label,next,mark);const image=document.createElement('img');image.className='pdf-page-image';image.alt='صفحة من المستند';const noteBox=el('div','pdf-note-box'),note=document.createElement('textarea');note.placeholder='أضف ملاحظة لهذه الصفحة...';note.rows=3;const saveNote=el('button','btn-secondary','حفظ الملاحظة');noteBox.append(el('label','pdf-note-label','ملاحظات الصفحة'),note,saveNote);const bookmarks=el('div','pdf-bookmarks');root.append(toolbar,image,noteBox,bookmarks);const draw=()=>{const data=activePdfToken?window.DAFTARNative.renderCachedPdfPage(activePdfToken,pageIndex,1200):window.DAFTARNative.renderPdfPage(d.uri,pageIndex,1200);if(!data)throw Error('تعذر عرض الصفحة '+(pageIndex+1));image.src='data:image/png;base64,'+data;label.textContent=(pageIndex+1)+' / '+count;prev.disabled=pageIndex===0;next.disabled=pageIndex===count-1;mark.textContent=d.bookmarks.includes(pageIndex)?'★ محفوظة':'☆ حفظ الصفحة';note.value=d.pageNotes[String(pageIndex)]||'';d.lastPage=pageIndex;reqWrite(db.transaction(DOCS,'readwrite').objectStore(DOCS).put(d)).catch(()=>{})};const drawBookmarks=()=>{bookmarks.innerHTML='';if(!d.bookmarks.length)return;bookmarks.append(el('b','pdf-bookmark-title','الصفحات المحفوظة'));d.bookmarks.slice().sort((a,b)=>a-b).forEach(n=>{const b=el('button','btn-secondary','صفحة '+(n+1));b.onclick=()=>{pageIndex=n;draw()};bookmarks.append(b)})};prev.onclick=()=>{if(pageIndex>0){pageIndex--;draw()}};next.onclick=()=>{if(pageIndex<count-1){pageIndex++;draw()}};mark.onclick=()=>{d.bookmarks.includes(pageIndex)?d.bookmarks=d.bookmarks.filter(x=>x!==pageIndex):d.bookmarks.push(pageIndex);draw();drawBookmarks();reqWrite(db.transaction(DOCS,'readwrite').objectStore(DOCS).put(d)).catch(()=>{})};saveNote.onclick=()=>{d.pageNotes[String(pageIndex)]=note.value;reqWrite(db.transaction(DOCS,'readwrite').objectStore(DOCS).put(d)).then(()=>toast('تم حفظ ملاحظة الصفحة')).catch(()=>toast('تعذر حفظ الملاحظة'))};draw();drawBookmarks()}else if(ext==='docx'){if(!window.JSZip)throw Error('مكتبة قراءة المستندات غير متاحة.');const zip=await JSZip.loadAsync(d.blob),file=zip.file('word/document.xml');if(!file)throw Error('ملف Word غير صالح أو لا يحتوي على نص.');const xml=await file.async('text'),doc=new DOMParser().parseFromString(xml,'application/xml'),paragraphs=Array.from(doc.getElementsByTagName('*')).filter(n=>n.localName==='p'),page=el('article','doc-page');paragraphs.forEach(p=>{const text=Array.from(p.getElementsByTagName('*')).filter(n=>n.localName==='t').map(n=>n.textContent).join('');if(text.trim())page.append(el('p','',text))});if(!page.childNodes.length)page.append(el('p','','لا يوجد نص قابل للعرض.'));root.append(page)}else if(ext==='pptx'){if(!window.JSZip)throw Error('مكتبة قراءة العروض غير متاحة.');const zip=await JSZip.loadAsync(d.blob),paths=Object.keys(zip.files).filter(x=>x.startsWith('ppt/slides/slide')&&x.endsWith('.xml')).sort((a,b)=>Number(a.split('slide')[1].split('.')[0])-Number(b.split('slide')[1].split('.')[0]));for(const path of paths){const xml=await zip.files[path].async('text'),doc=new DOMParser().parseFromString(xml,'application/xml'),texts=Array.from(doc.getElementsByTagName('a:t')).map(x=>x.textContent).filter(Boolean),slide=el('article','doc-slide');texts.forEach((t,i)=>slide.append(el(i===0?'h3':'p','',t)));root.append(slide)}}}catch(err){releasePdfViewer();root.append(el('div','empty','لم نتمكن من عرض الملف. '+err.message))}}
+async function openDocument(id){
+ const d=documents.find(x=>x.id===id);if(!d)return;
+ releasePdfViewer();
+ const root=$('documentPreview');root.innerHTML='';
+ $('documentTitle').textContent=d.name;
+ $('documentDialog').showModal();
+ const ext=(d.name.split('.').pop()||'').toLowerCase();
+ root.append(el('div','document-loading','جارٍ تجهيز الملف للعرض…'));
+ try{
+  if(!d.blob)throw Error('محتوى الملف غير موجود محلياً. إذا كان الملف مستعاداً من نسخة احتياطية، أعد استيراد النسخة التي تحتوي على الملفات.');
+  root.innerHTML='';
+  if(ext==='pdf'){
+   if(!window.DAFTARNative)throw Error('عارض PDF الأصلي غير متاح في إصدار التطبيق الحالي.');
+   const dataUrl=await blobToDataUrl(d.blob);
+   activePdfToken=window.DAFTARNative.preparePdfBase64(dataUrl.split(',')[1]);
+   activePdfId=id;
+   if(!activePdfToken)throw Error('تعذر تجهيز ملف PDF. تحقق من أن الملف سليم وأقل من 40 ميجابايت.');
+   const count=window.DAFTARNative.getCachedPdfPageCount(activePdfToken);
+   if(count<1)throw Error('الملف ليس PDF صالحاً أو أن محتواه تالف.');
+   d.bookmarks=Array.isArray(d.bookmarks)?d.bookmarks:[];
+   d.pageNotes=d.pageNotes&&typeof d.pageNotes==='object'?d.pageNotes:{};
+   let pageIndex=Math.max(0,Math.min(count-1,Number(d.lastPage)||0));
+   const toolbar=el('div','pdf-toolbar'),prev=el('button','btn-secondary','السابق'),label=el('span','pdf-page-label',''),next=el('button','btn-secondary','التالي'),mark=el('button','btn-secondary','☆ حفظ الصفحة');
+   toolbar.append(prev,label,next,mark);
+   const image=document.createElement('img');image.className='pdf-page-image';image.alt='صفحة من المستند';
+   const noteBox=el('div','pdf-note-box'),note=document.createElement('textarea');note.placeholder='أضف ملاحظة لهذه الصفحة...';note.rows=3;
+   const saveNote=el('button','btn-secondary','حفظ الملاحظة');noteBox.append(el('label','pdf-note-label','ملاحظات الصفحة'),note,saveNote);
+   const bookmarks=el('div','pdf-bookmarks');root.append(toolbar,image,noteBox,bookmarks);
+   const draw=()=>{
+    const data=window.DAFTARNative.renderCachedPdfPage(activePdfToken,pageIndex,1200);
+    if(!data)throw Error('تعذر عرض الصفحة '+(pageIndex+1)+'.');
+    image.src='data:image/png;base64,'+data;label.textContent=(pageIndex+1)+' / '+count;
+    prev.disabled=pageIndex===0;next.disabled=pageIndex===count-1;
+    mark.textContent=d.bookmarks.includes(pageIndex)?'★ محفوظة':'☆ حفظ الصفحة';
+    note.value=d.pageNotes[String(pageIndex)]||'';d.lastPage=pageIndex;
+    reqWrite(db.transaction(DOCS,'readwrite').objectStore(DOCS).put(d)).catch(()=>{});
+   };
+   const drawBookmarks=()=>{bookmarks.innerHTML='';if(!d.bookmarks.length)return;bookmarks.append(el('b','pdf-bookmark-title','الصفحات المحفوظة'));d.bookmarks.slice().sort((a,b)=>a-b).forEach(n=>{const b=el('button','btn-secondary','صفحة '+(n+1));b.onclick=()=>{pageIndex=n;draw()};bookmarks.append(b)})};
+   prev.onclick=()=>{if(pageIndex>0){pageIndex--;draw()}};
+   next.onclick=()=>{if(pageIndex<count-1){pageIndex++;draw()}};
+   mark.onclick=()=>{d.bookmarks.includes(pageIndex)?d.bookmarks=d.bookmarks.filter(x=>x!==pageIndex):d.bookmarks.push(pageIndex);draw();drawBookmarks();reqWrite(db.transaction(DOCS,'readwrite').objectStore(DOCS).put(d)).catch(()=>{})};
+   saveNote.onclick=()=>{d.pageNotes[String(pageIndex)]=note.value;reqWrite(db.transaction(DOCS,'readwrite').objectStore(DOCS).put(d)).then(()=>toast('تم حفظ ملاحظة الصفحة')).catch(()=>toast('تعذر حفظ الملاحظة'))};
+   draw();drawBookmarks();
+  }else if(ext==='docx'){
+   if(!window.JSZip)throw Error('مكتبة قراءة مستندات Word غير متاحة.');
+   const zip=await JSZip.loadAsync(d.blob),file=zip.file('word/document.xml');
+   if(!file)throw Error('ملف Word غير صالح: لم يتم العثور على محتوى المستند.');
+   const xml=await file.async('text'),doc=new DOMParser().parseFromString(xml,'application/xml');
+   if(doc.getElementsByTagName('parsererror').length)throw Error('تعذر تحليل محتوى ملف Word؛ قد يكون الملف تالفاً.');
+   const paragraphs=Array.from(doc.getElementsByTagName('*')).filter(n=>n.localName==='p'),page=el('article','doc-page');
+   paragraphs.forEach(p=>{const text=Array.from(p.getElementsByTagName('*')).filter(n=>n.localName==='t').map(n=>n.textContent).join('');if(text.trim())page.append(el('p','',text))});
+   if(!page.childNodes.length)page.append(el('p','','لا يوجد نص قابل للاستخراج من هذا المستند.'));
+   root.append(page);
+  }else if(ext==='pptx'){
+   if(!window.JSZip)throw Error('مكتبة قراءة عروض PowerPoint غير متاحة.');
+   const zip=await JSZip.loadAsync(d.blob),paths=Object.keys(zip.files).filter(x=>/^ppt\/slides\/slide\d+\.xml$/.test(x)).sort((a,b)=>Number(a.match(/slide(\d+)/)[1])-Number(b.match(/slide(\d+)/)[1]));
+   if(!paths.length)throw Error('لم يتم العثور على شرائح داخل ملف PowerPoint.');
+   for(const path of paths){
+    const xml=await zip.files[path].async('text'),doc=new DOMParser().parseFromString(xml,'application/xml');
+    if(doc.getElementsByTagName('parsererror').length)continue;
+    const texts=Array.from(doc.getElementsByTagName('*')).filter(x=>x.localName==='t'&&x.namespaceURI==='http://schemas.openxmlformats.org/drawingml/2006/main').map(x=>x.textContent).filter(Boolean);
+    const slide=el('article','doc-slide');texts.forEach((t,i)=>slide.append(el(i===0?'h3':'p','',t)));
+    if(!slide.childNodes.length)slide.append(el('p','','شريحة بلا نص قابل للاستخراج.'));
+    root.append(slide);
+   }
+  }else throw Error('صيغة الملف غير مدعومة للمعاينة داخل دفتر.');
+ }catch(err){
+  releasePdfViewer();root.innerHTML='';
+  const message=el('div','document-error');
+  message.append(el('b','','تعذر فتح الملف'),el('p','',err&&err.message?err.message:'حدث خطأ غير معروف أثناء قراءة الملف.'));
+  const retry=el('button','btn-secondary','إعادة المحاولة');retry.onclick=()=>openDocument(id);message.append(retry);root.append(message);
+ }
+}
 
 async function updateStorage(){const node=$('storageStatus');if(!navigator.storage?.estimate){node.textContent='معلومات السعة غير متاحة في هذا الجهاز.';return}try{const x=await navigator.storage.estimate(),fmt=n=>n>1073741824?(n/1073741824).toFixed(2)+' GB':(n/1048576).toFixed(1)+' MB';node.textContent='المستخدم '+fmt(x.usage||0)+' · السعة التقديرية '+fmt(x.quota||0)+' · آخر 100 نقطة استعادة محفوظة محلياً.'}catch{node.textContent='تعذر فحص مساحة التخزين.'}}
 window.addEventListener('pagehide',()=>{if(db)db.close()});
