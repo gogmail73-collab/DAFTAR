@@ -58,3 +58,11 @@ The unsigned/debug build is for testing only and is not a safe substitute for an
 - Exam calendar with countdowns and upcoming exam overview.
 - Full JSON backup now embeds local document files (PDF, DOCX, PPTX); backup files can be large, up to the app's import limit.
 - Database schema migrated to version 5 while preserving existing subjects, lectures, sessions, and document records.
+
+- Focus/break timer (25/5), persisted across app restarts, with per-subject study-time analytics.
+- Gradebook with assessment records and subject averages.
+- Manual flashcards with active recall, reveal-answer flow and mastery counters.
+- Global search across study records and indexed DOCX/PPTX text.
+- Native Android share sheet for subject summaries and lecture notes.
+- Paginated PDF viewer with last-page persistence, page bookmarks and per-page notes; PDF attachments are included in backups and can be rendered after restore.
+- Android WorkManager reminders for task deadlines, exams, class sessions and timer completion. WorkManager timing is battery-optimized and may not be exact to the minute; Android 13+ notification permission is required.
