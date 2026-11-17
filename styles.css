@@ -236,3 +236,24 @@ body[data-theme="light"] .subject-card{background:linear-gradient(145deg,#fffefa
 .document-preview{max-height:70vh;overflow:auto}
 @media(max-width:760px){.topbar{height:auto;min-height:64px;padding-top:calc(8px + env(safe-area-inset-top,0px));padding-bottom:8px}.theme-choices{width:100%}.setting-card{align-items:flex-start}}
 @media(prefers-reduced-motion:reduce){.page{animation:none!important}.subject-card{transition:none!important}}
+
+/* DAFTAR 2.0 — weekly action overview */
+.week-overview{margin:18px 0 22px;overflow:hidden}
+.week-range{font-size:10px;color:var(--muted);white-space:nowrap}
+.week-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0 18px}
+.week-metric{display:flex;flex-direction:column;gap:4px;padding:13px 15px;border:1px solid var(--line);border-radius:13px;background:var(--surface2)}
+.week-metric b{font-size:23px;line-height:1.2;color:var(--text);font-variant-numeric:tabular-nums}
+.week-metric span{font-size:10px;color:var(--muted)}
+.week-agenda{display:grid;gap:8px}
+.week-item{display:grid;grid-template-columns:115px minmax(0,1fr) auto;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.week-item-when,.week-item-info{display:flex;flex-direction:column;gap:4px;min-width:0}
+.week-item-when b,.week-item-info b{font-size:11px;color:var(--text);overflow-wrap:anywhere}
+.week-item-when small,.week-item-info small{font-size:9px;color:var(--muted);overflow-wrap:anywhere}
+.week-kind{font-size:9px;padding:5px 9px;border-radius:20px;background:var(--surface2);color:var(--muted);white-space:nowrap}
+.week-task .week-kind{color:#b88642;background:#b8864218}
+.week-exam .week-kind{color:#c46b75;background:#c46b7518}
+.week-class .week-kind{color:#6f8fd0;background:#6f8fd018}
+.week-study .week-kind{color:#9b83d1;background:#9b83d118}
+.week-item-when b{color:var(--muted)}
+.week-more{font-size:10px;color:var(--muted);text-align:center;margin:8px 0 0}
+@media(max-width:760px){.week-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.week-metric{padding:11px}.week-item{grid-template-columns:88px minmax(0,1fr);gap:8px;padding:11px}.week-kind{grid-column:2;justify-self:start}.week-item-when b,.week-item-info b{font-size:10px}.week-range{font-size:8px}}
