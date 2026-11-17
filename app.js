@@ -34,7 +34,13 @@ function renderWeekOverview(){
  $('weekTaskCount').textContent=taskCount;$('weekExamCount').textContent=examCount;$('weekClassCount').textContent=classCount;$('weekStudyCount').textContent=studyCount;
  $('weekRange').textContent=weekDateLabel(todayKey)+' — '+weekDateLabel(lastKey);
  const order={exam:0,task:1,class:2,study:3};
- items.sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time)||(order[a.kind]-order[b.kind]));
+ // Surface the most recently overdue tasks first so old unfinished work cannot hide every upcoming event.
+ items.sort((a,b)=>{
+  const overdueA=!!a.late,overdueB=!!b.late;
+  if(overdueA!==overdueB)return overdueA?-1:1;
+  if(overdueA&&overdueB)return b.date.localeCompare(a.date)||(order[a.kind]-order[b.kind]);
+  return a.date.localeCompare(b.date)||a.time.localeCompare(b.time)||(order[a.kind]-order[b.kind]);
+ });
  root.innerHTML='';
  if(!items.length){root.append(el('div','empty','أسبوعك هادئ حتى الآن. أضف مهمة أو موعداً أو جلسة مذاكرة لتظهر خطتك هنا.'));return}
  items.slice(0,10).forEach(item=>{
