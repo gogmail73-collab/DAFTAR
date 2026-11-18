@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#101827"><meta name="description" content="DAFTAR — مساحة ذكية لتنظيم دراستك">
+<meta name="theme-color" content="#111827"><meta name="description" content="DAFTAR — مساحة ذكية لتنظيم دراستك">
 <link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon.svg"><link rel="stylesheet" href="./styles.css">
 <title>DAFTAR — مساحة دراستك</title>
 </head>
@@ -32,7 +32,19 @@
 <header class="topbar"><button class="mobile-menu" id="menuBtn" aria-label="فتح القائمة">☰</button><div class="crumb"><span>مساحة العمل</span><i>/</i><b id="pageTitle">الرئيسية</b></div><div class="top-actions"><div class="search-wrap"><input id="globalSearch" type="search" placeholder="ابحث في دفتر..." aria-label="بحث شامل" autocomplete="off"><div id="searchResults" class="search-results" hidden></div></div><span class="today" id="todayLabel"></span><button class="theme-toggle" id="themeBtn" aria-label="تغيير المظهر">◐</button><button class="quick-add" id="quickAdd">＋ <span>إضافة مادة</span></button></div></header>
 <div class="content">
 <section class="page active" id="page-home">
-<div class="hero"><div class="hero-copy"><span class="overline"><span class="pulse"></span> مساحتك جاهزة للإنجاز</span><h1>أهلاً بيك في <em>DAFTAR</em></h1><p>رتّب أفكارك، تابع تقدمك، وخلي كل خطوة في دراستك محسوبة.</p><div class="hero-actions"><button class="btn-primary" id="heroAdd">＋ أضف مادة جديدة</button><button class="btn-quiet" data-goto="planner">خطط لجلستك <span>←</span></button></div></div><div class="hero-visual"><div class="orb orb-one"></div><div class="orb orb-two"></div><div class="book-stack"><div class="book book-back"></div><div class="book book-mid"></div><div class="book book-front"><span>DAFTAR</span><i>✦</i><small>LEARN / TRACK / GROW</small></div></div><div class="float-chip chip-top">✧ <span>تقدمك يصنع الفرق</span></div><div class="float-chip chip-bottom"><b id="heroPercent">0%</b><span>نسبة الإنجاز</span></div></div></div>
+<section class="hero">
+<div class="hero-copy">
+<span class="overline"><span class="pulse"></span> مساحة العمل الأكاديمية</span>
+<h1>خطّط بوضوح.<br><em>وتقدّم بثبات.</em></h1>
+<p>كل موادك ومحاضراتك ومهامك في مساحة واحدة — محفوظة على جهازك.</p>
+<div class="hero-actions"><button class="btn-primary" id="heroAdd">＋ أضف مادة</button><button class="btn-quiet" data-goto="planner">افتح مخطط المذاكرة <span>←</span></button></div>
+</div>
+<div class="hero-visual">
+<div class="hero-progress-label"><span>معدل إنجاز المحاضرات</span><b id="heroPercent">0%</b></div>
+<div class="hero-progress-track"><span id="heroProgressBar"></span></div>
+<div class="hero-note"><span class="hero-note-mark">01</span><div><b>استمر من حيث توقفت</b><small>التقدم يُحفظ تلقائياً على هذا الجهاز</small></div></div>
+</div>
+</section>
 <div class="section-heading"><div><span class="eyebrow">نظرة عامة</span><h2>رحلتك الدراسية</h2></div><span class="live-tag"><span></span> يتم الحفظ تلقائياً</span></div>
 <div class="stats-grid"><article class="stat-card"><div class="stat-icon violet">▤</div><div><small>المواد الدراسية</small><strong id="subjectCount">0</strong><span>مواد منظمة</span></div><div class="stat-decoration">01</div></article><article class="stat-card"><div class="stat-icon cyan">▣</div><div><small>إجمالي المحاضرات</small><strong id="lectureCount">0</strong><span>محاضرة مسجلة</span></div><div class="stat-decoration">02</div></article><article class="stat-card"><div class="stat-icon green">✓</div><div><small>المحاضرات المكتملة</small><strong id="doneCount">0</strong><span>خطوة للأمام</span></div><div class="stat-decoration">03</div></article><article class="stat-card"><div class="stat-icon amber">◔</div><div><small>معدل الإنجاز</small><strong id="progressCount">0%</strong><span>من إجمالي المحاضرات</span></div><div class="mini-ring" id="miniRing"><span id="miniRingText">0%</span></div></article></div>
 <div class="home-columns"><section class="panel subjects-panel"><div class="panel-head"><div><span class="eyebrow">واصل من حيث توقفت</span><h2>موادي الدراسية</h2></div><button class="text-link" data-goto="subjects">عرض الكل ←</button></div><div id="subjects" class="subject-grid"></div></section><section class="panel today-panel"><div class="panel-head"><div><span class="eyebrow">نظّم وقتك</span><h2>جلسات المذاكرة</h2></div><button class="round-add" id="addSessionHome">＋</button></div><div id="sessionList"></div></section></div>
