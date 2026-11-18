@@ -611,3 +611,7 @@ body:not(.light) .priority.low{background:#263a61;color:#b7c8ff}
 }
 @media(max-width:420px){.search-wrap{width:112px}.quick-add{padding:9px}.quick-add span{display:none}.crumb span,.crumb i{display:none}.crumb{font-size:10px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+
+/* Performance and light palette corrections */
+.page,.page.active{animation:none!important;transition:none!important}
+body.light{--bg:#f3f4f6;--sidebar:#111827;--surface:#ffffff;--surface2:#f8fafc;--surface3:#eef1f5;--text:#182230;--muted:#6b7280;--line:#e2e6ec;--accent:#3156d3;--accent2:#5274e8;--mint:#5274e8;--shadow:0 12px 30px rgba(15,23,42,.055);color-scheme:light}
