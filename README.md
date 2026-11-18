@@ -70,3 +70,9 @@ The unsigned/debug build is for testing only and is not a safe substitute for an
 - Local recovery history increased to 100 snapshots (previously 30).
 - Tasks support subtasks and daily, weekly or monthly recurrence; recurring items are generated when the current task is marked complete.
 - Grade target calculator estimates the score needed across remaining marks to reach a chosen percentage.
+
+
+## DAFTAR 2.0 development branch
+- Added a live seven-day dashboard agenda combining upcoming deadlines, exams, weekly class timetable entries, and planned study sessions.
+- The dashboard is derived from existing local records; it does not create duplicate records or send study data to a server.
+- This is an incremental development build. Full device-level verification, document-format regression testing, backup/restore testing, and update-signature validation remain release gates.
