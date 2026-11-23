@@ -57,7 +57,16 @@ public class MainActivity extends Activity {
         settings.setAllowFileAccess(false); settings.setAllowContentAccess(true);
         settings.setJavaScriptCanOpenWindowsAutomatically(false); settings.setSupportMultipleWindows(false);
         webView.setWebViewClient(new WebViewClient() {
-            @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) { return assetLoader.shouldInterceptRequest(request.getUrl()); }
+            @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                return assetLoader.shouldInterceptRequest(request.getUrl());
+            }
+            @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                Uri uri = request.getUrl();
+                // The app is an offline-first local shell. Never let web content replace
+                // the trusted app origin with an arbitrary remote page.
+                return !"https".equalsIgnoreCase(uri.getScheme())
+                        || !"appassets.androidplatform.net".equalsIgnoreCase(uri.getHost());
+            }
         });
         webView.addJavascriptInterface(new NativeDocumentBridge(), "DAFTARNative");
         webView.setWebChromeClient(new WebChromeClient() {
